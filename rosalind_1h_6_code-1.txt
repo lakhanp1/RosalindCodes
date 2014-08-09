@@ -1,0 +1,139 @@
+#!usr/bin/perl -w
+use strict;
+use warnings;
+
+
+=head
+Frequent Words with Mismatches and Reverse Complements Problem 
+
+We now extend Frequent Words with Mismatches Problem to handle both mismatches and reverse complements. Recall that Pattern refers to the reverse complement of Pattern.
+Frequent Words with Mismatches and Reverse Complements Problem
+
+Find the most frequent k-mers (with mismatches and reverse complements) in a DNA string.
+
+Given: A DNA string Text as well as integers k and d.
+
+Return: All k-mers Pattern maximizing the sum Countd(Text, Pattern) + Countd(Text, Pattern) over all possible k-mers.
+Sample Dataset
+
+ACGTTGCATGTCGCATGATGCATGAGAGCT
+4 1
+
+Sample Output
+
+ATGT ACAT
+
+=cut
+
+my $seq = "CCTATAGCGCCTATAGCGACTGGGGCGATTACGTACGACTGGGGCGAGCTAGTCTTGCTAGTCTTTTACGTACGTTACGTACGCAGATCAAGCTTACGTACGGCTAGTCTTACTGGGGCGACAGATCAAGCCCTATAGCGTTACGTACGTTACGTACGGCTAGTCTTCCTATAGCGGCTAGTCTTCCTATAGCGCAGATCAAGCGCTAGTCTTGCTAGTCTTGCTAGTCTTTTACGTACGCAGATCAAGCACTGGGGCGACAGATCAAGCGCTAGTCTTGCTAGTCTTTTACGTACGGCTAGTCTTCCTATAGCGACTGGGGCGAACTGGGGCGAGCTAGTCTTACTGGGGCGACAGATCAAGCCCTATAGCGCCTATAGCGTTACGTACGCCTATAGCGGCTAGTCTTTTACGTACGGCTAGTCTTTTACGTACGCCTATAGCGGCTAGTCTTACTGGGGCGACAGATCAAGCCCTATAGCGACTGGGGCGACAGATCAAGCGCTAGTCTTTTACGTACGCCTATAGCGCAGATCAAGCTTACGTACGTTACGTACGCCTATAGCGCAGATCAAGCCCTATAGCGCAGATCAAGCCAGATCAAGCACTGGGGCGAACTGGGGCGAACTGGGGCGACCTATAGCGACTGGGGCGAACTGGGGCGACAGATCAAGCCAGATCAAGCGCTAGTCTTTTACGTACGTTACGTACGACTGGGGCGACCTATAGCGCCTATAGCGCAGATCAAGCCCTATAGCGACTGGGGCGATTACGTACGCCTATAGCGCCTATAGCGTTACGTACGACTGGGGCGACCTATAGCGACTGGGGCGAACTGGGGCGATTACGTACGGCTAGTCTTGCTAGTCTTACTGGGGCGACAGATCAAGCGCTAGTCTT";
+
+my $len = 10;
+my $mismatches = 3;
+
+my %strings;
+my %freqs;
+my $maxFreq = 0;
+
+
+my @subSeqs = ($seq=~m/(?=(\w{$len}))/g);
+
+
+foreach my $probe(@subSeqs){
+	
+	#print $probe,"\n";
+	#my $revCompl = reverseComplement($probe);
+	#print $revCompl,"\n$probe\n\n";
+	
+	
+	#generate probes from this probe and check their freq too
+	%strings = ();
+	
+	#find all possible kmers and their reverseCompletment kmers that can match with current kmer
+	&generatePossibleProbes($probe, $mismatches);
+	foreach(keys %strings){
+		$freqs{$_}++;
+		#print "$_\n";
+		
+	}
+	
+}
+
+
+my %freqBins;
+
+foreach(keys %freqs){
+	#update the max freq
+	my $jointFreq = 0;
+	if(defined $freqs{&reverseComplement($_)}){
+		$jointFreq = $freqs{$_} + $freqs{&reverseComplement($_)};
+		push(@{$freqBins{$jointFreq}}, $_);
+	}
+	
+	
+	if($jointFreq > $maxFreq){
+		$maxFreq = $jointFreq;
+	}
+	
+}
+
+
+print "$maxFreq\t@{$freqBins{$maxFreq}}\n";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#find all possible strings with n mismatches for a string1
+#this is recursive subroutine
+sub generatePossibleProbes{
+	my $probe = shift;
+	my $lim = shift;
+
+	if($lim == 0){
+		return;
+	}
+	
+	#print $probe,"\t",$lim,"\n";
+	
+	my ($pre, $suf);
+	for(my $i=0; $i < length $probe; $i++){
+		$pre = substr($probe,0,$i);
+		$suf = substr($probe,$i+1);
+		
+		foreach my $base('A', 'T', 'G', 'C'){
+			my $kmer = $pre.$base.$suf;
+						
+			#print "$kmer  ";
+			#add kmer count as it matches with current position probe
+			$strings{$kmer} = 1;
+						
+			&generatePossibleProbes($kmer, $lim-1);
+			
+		}
+		#print "\n";
+	}
+	#print "\n";
+}
+
+
+
+
+sub reverseComplement{
+	my $str = shift;
+	$str = reverse $str;
+	$str =~ tr/ATGC/TACG/;
+	return $str;
+}
